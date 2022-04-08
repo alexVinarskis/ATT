@@ -37,17 +37,13 @@ def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut, extra_strings):
     root_in = ET.parse(fIn).getroot()
 
     attrs_out = []
-    to_remove_list = []
     for element in root_out:
         attrs_out.append(element.attrib.get('name'))
-        # if overwrtiing sting already existed in old file, delete old version of it
-        if element.attrib.get('name') in extra_strings and element.attrib.get('translatable') != 'false':
-            to_remove_list.append(element)
-    for element in to_remove_list:
-        root_out.remove(element)
-
+  
     counter = 0
     newRoot = ET.Element('resources')
+    to_change_list = []
+    to_change_list_names = []
 
     for root_element in root_in:
         if (root_element.attrib.get('name') not in attrs_out or root_element.attrib.get('name') in extra_strings) and root_element.get('translatable') != 'false':
@@ -86,12 +82,22 @@ def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut, extra_strings):
                                 if root_element[j][element].tail != None:
                                     root_element[j][element].tail = " " + translate.translate_text(Text=root_element[j][element].tail, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
-            # add element to tree
-            newRoot.append(root_element)
-            counter = counter + 1
+            # add element to tree, or save to overwrite it (without breaking order)
+            if root_element.attrib.get('name') in extra_strings:
+                to_change_list.append(root_element)
+                to_change_list_names.append(root_element.attrib.get('name'))
+            else:
+                newRoot.append(root_element)
 
             if useDebug: 
                 print("adding: ", root_element.attrib)
+
+            counter = counter + 1
+    
+    # edit elements which already existed, and were manually overwritten - preserves the order
+    for i in range(len(root_out)):
+        if root_out[i].attrib.get('name') in to_change_list_names:
+            root_out[i] = to_change_list[to_change_list_names.index(root_out[i].attrib.get('name'))]
 
     root_out.extend(newRoot)
     ET.ElementTree(root_out).write(fOut, encoding='utf-8')
