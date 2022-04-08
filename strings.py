@@ -32,60 +32,66 @@ from sys import platform
 #
 ################################################################################
 
-def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut):
+def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut, extra_strings):
     root_out = ET.parse(fOut).getroot()
     root_in = ET.parse(fIn).getroot()
 
     attrs_out = []
+    to_remove_list = []
     for element in root_out:
         attrs_out.append(element.attrib.get('name'))
+        # if overwrtiing sting already existed in old file, delete old version of it
+        if element.attrib.get('name') in extra_strings and element.attrib.get('translatable') != 'false':
+            to_remove_list.append(element)
+    for element in to_remove_list:
+        root_out.remove(element)
 
     counter = 0
     newRoot = ET.Element('resources')
 
-    for element in root_in:
-        if element.attrib.get('name') not in attrs_out and element.get('translatable') != 'false':
+    for root_element in root_in:
+        if (root_element.attrib.get('name') not in attrs_out or root_element.attrib.get('name') in extra_strings) and root_element.get('translatable') != 'false':
             # translate elemenet(s)
-            if element.tag=='string':
+            if root_element.tag=='string':
                 # trasnalte text and fix any possible issues traslotor creates: messing up HTML tags, adding spaces between string formatting elements
-                totranslate=element.text
+                totranslate=root_element.text
                 # if single string - translate directly
                 if totranslate!=None:
-                    element.text=translate.translate_text(Text=totranslate, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                    root_element.text=translate.translate_text(Text=totranslate, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
                 # if string was broken down due to HTML tags, reassemble it
                 # if string has subelements, previous command will fail - do by parts reconstruction
-                if len(element) != 0:
-                    for element in range(len(element)):
-                        if element[element].text != None:
-                            element[element].text = " " + translate.translate_text(Text=element[element].text, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
-                        if element[element].tail != None:
-                            element[element].tail = " " + translate.translate_text(Text=element[element].tail, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                if len(root_element) != 0:
+                    for element in range(len(root_element)):
+                        if root_element[element].text != None:
+                            root_element[element].text = " " + translate.translate_text(Text=root_element[element].text, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                        if root_element[element].tail != None:
+                            root_element[element].tail = " " + translate.translate_text(Text=root_element[element].tail, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
-            if element.tag=='string-array':
-                for j in range(len(element)):
+            if root_element.tag=='string-array':
+                for j in range(len(root_element)):
                 #	for each translatable string call the translation subroutine
                 #   and replace the string by its translation,
-                    if element[j].tag=='item':
+                    if root_element[j].tag=='item':
                         # trasnalte text and fix any possible issues traslotor creates: messing up HTML tags, adding spaces between string formatting elements
-                        totranslate=element[j].text
+                        totranslate=root_element[j].text
                         if(totranslate!=None):
-                            element[j].text=translate.translate_text(Text=totranslate, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                            root_element[j].text=translate.translate_text(Text=totranslate, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
                         # if string was broken down due to HTML tags, reassemble it
-                        if len(element[j]) != 0:
-                            for element in range(len(element[j])):
-                                if element[j][element].text != None:
-                                    element[j][element].text = " " + translate.translate_text(Text=element[j][element].text, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
-                                if element[j][element].tail != None:
-                                    element[j][element].tail = " " + translate.translate_text(Text=element[j][element].tail, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                        if len(root_element[j]) != 0:
+                            for element in range(len(root_element[j])):
+                                if root_element[j][element].text != None:
+                                    root_element[j][element].text = " " + translate.translate_text(Text=root_element[j][element].text, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
+                                if root_element[j][element].tail != None:
+                                    root_element[j][element].tail = " " + translate.translate_text(Text=root_element[j][element].tail, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
             # add element to tree
-            newRoot.append(element)
+            newRoot.append(root_element)
             counter = counter + 1
 
             if useDebug: 
-                print("adding: ", element.attrib)
+                print("adding: ", root_element.attrib)
 
     root_out.extend(newRoot)
     ET.ElementTree(root_out).write(fOut, encoding='utf-8')
@@ -152,9 +158,11 @@ while xmlLangIn == '':
             xmlLangIn = ''
         xmlSubfolderInput = xmlSubfolder + "-" + xmlLangIn
 
-askUseDebug = input("\nDetailed logs? [Y/N (Default)] ").lower()
+askUseDebug = input("\nDetailed logs? [Y/N (Default)]\n").lower()
 if askUseDebug == 'y':
     useDebug = True
+
+overwrite_strings = input("\nAny strings to overwrite from source? Specify tags space separated\n").lower().split()
 print('\n')
 
 # get list of strings folders
@@ -174,6 +182,6 @@ else:
 # iterate each file & identify missing strings & sync them
 for i in range(len(values_folders)):
     strings_out = pathRes + pathSeparator + values_folders[i] + pathSeparator + xmlResource
-    xmlTranlator(xmlLangIn, values_languages[i], strings_in, strings_out)
+    xmlTranlator(xmlLangIn, values_languages[i], strings_in, strings_out, overwrite_strings)
 
 print("\n=================================================\n\n")
