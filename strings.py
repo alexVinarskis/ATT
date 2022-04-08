@@ -38,19 +38,19 @@ def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut):
 
     attrs_out = []
     for element in root_out:
-        attrs_out.append(element.attrib)
+        attrs_out.append(element.attrib.get('name'))
 
     counter = 0
     newRoot = ET.Element('resources')
 
     for element in root_in:
-        if element.attrib not in attrs_out and element.get('translatable') != 'false':
+        if element.attrib.get('name') not in attrs_out and element.get('translatable') != 'false':
             # translate elemenet(s)
             if element.tag=='string':
                 # trasnalte text and fix any possible issues traslotor creates: messing up HTML tags, adding spaces between string formatting elements
                 totranslate=element.text
                 # if single string - translate directly
-                if(totranslate!=None):
+                if totranslate!=None:
                     element.text=translate.translate_text(Text=totranslate, SourceLanguageCode=INPUTLANGUAGE, TargetLanguageCode=OUTPUTLANGUAGE).get('TranslatedText').replace('\\ ', '\\').replace('\\ n ', '\\n').replace('\\n ', '\\n').replace('/ ', '/').replace("\'", "\\'")
 
                 # if string was broken down due to HTML tags, reassemble it
@@ -66,8 +66,7 @@ def xmlTranlator(INPUTLANGUAGE, OUTPUTLANGUAGE, fIn, fOut):
                 for j in range(len(element)):
                 #	for each translatable string call the translation subroutine
                 #   and replace the string by its translation,
-                    isTranslatable=element[j].get('translatable')
-                    if(element[j].tag=='item') & (isTranslatable!='false'):
+                    if element[j].tag=='item':
                         # trasnalte text and fix any possible issues traslotor creates: messing up HTML tags, adding spaces between string formatting elements
                         totranslate=element[j].text
                         if(totranslate!=None):
